@@ -11,33 +11,41 @@ import {
   LOG_REFRESH_INTERVAL,
 } from './../constants';
 
+function sortLogs(entry1, entry2, sortDirection) {
+  const positiveReturn = sortDirection === 'ascending' ? 1 : -1;
+  const date1 = new Date(entry1.timestamp);
+  const date2 = new Date(entry2.timestamp);
+  return date1.getTime() > date2.getTime()
+    ? positiveReturn
+    : -1 * positiveReturn;
+}
+
 export default class Logs extends React.Component {
   static propTypes = {
     httpService: PropTypes.object.isRequired,
     queryTransformService: PropTypes.object.isRequired,
     podsSubscriptionService: PropTypes.object.isRequired,
-    isLambda: PropTypes.bool,
+
+    isCompact: PropTypes.bool,
     readonlyLabels: PropTypes.arrayOf(PropTypes.string.isRequired),
-    lambdaName: PropTypes.string,
   };
 
   static defaultProps = {
     isLambda: false,
     readonlyLabels: [],
-    lambdaName: null,
   };
 
   state = {
-    compact: this.props.isLambda,
     searchPhrase: '',
     labels: [],
     readonlyLabels: this.props.readonlyLabels,
     logsPeriod: DEFAULT_PERIOD,
     advancedSettings: {
       query: '',
-      resultLimit: 100,
+      resultLimit: 1000,
       showPreviousLogs: true,
       showHealthChecks: true,
+      showIstioLogs: false,
     },
     sortDirection: SORT_ASCENDING,
     logs: [],
@@ -46,11 +54,11 @@ export default class Logs extends React.Component {
   intervalId = null;
 
   componentDidMount = () => {
-    const { labels, searchPhrase } = this.state;
+    const { labels } = this.state;
     this.setState({
       advancedSettings: {
         ...this.state.advancedSettings,
-        query: this.props.queryTransformService.toQuery(labels, searchPhrase),
+        query: this.props.queryTransformService.toQuery(labels),
       },
     });
 
@@ -81,6 +89,7 @@ export default class Logs extends React.Component {
       resultLimit,
       showPreviousLogs,
       showHealthChecks,
+      showIstioLogs,
     } = advancedSettings;
 
     try {
@@ -93,14 +102,22 @@ export default class Logs extends React.Component {
         showPreviousLogs,
         showHealthChecks,
       });
-      const logs = result.streams
-        ? result.streams
-            .flatMap(stream => stream.entries)
-            .map(l => ({
-              timestamp: l.ts,
-              log: l.line,
-            }))
-        : [];
+
+      let streams = result.streams || [];
+
+      if (!showIstioLogs) {
+        streams = [...streams].filter(
+          s => !~s.labels.indexOf('container_name="istio-proxy"'),
+        );
+      }
+      const logs = streams
+        .flatMap(stream => stream.entries)
+        .map(l => ({
+          timestamp: l.ts,
+          log: l.line,
+        }))
+        .sort((e1, e2) => sortLogs(e1, e2, sortDirection));
+
       this.setState({ logs });
     } catch (e) {
       console.warn(e); // todo add error message
@@ -109,7 +126,7 @@ export default class Logs extends React.Component {
 
   filterHealthChecks = entry => {
     const showHealthChecks = this.state.advancedSettings.showHealthChecks;
-    return showHealthChecks || entry.log.indexOf('GET /healthz') < 0;
+    return showHealthChecks || !~entry.log.indexOf('GET /healthz');
   };
 
   startAutoRefresh() {
@@ -120,24 +137,16 @@ export default class Logs extends React.Component {
   // intercept setState
   updateState = partialState => {
     const { parseQuery, toQuery } = this.props.queryTransformService;
-    const { labels, searchPhrase, query } = this.state;
+    const { query } = this.state;
 
     let additionalState = {};
 
-    if ('searchPhrase' in partialState) {
-      // searchPhrase changed, update query
-      additionalState = {
-        advancedSettings: {
-          ...this.state.advancedSettings,
-          query: toQuery(labels, partialState.searchPhrase),
-        },
-      };
-    } else if ('labels' in partialState) {
+    if ('labels' in partialState) {
       // labels changed, update query
       additionalState = {
         advancedSettings: {
           ...this.state.advancedSettings,
-          query: toQuery(partialState.labels, searchPhrase),
+          query: toQuery(partialState.labels),
         },
       };
     } else if (
@@ -171,13 +180,14 @@ export default class Logs extends React.Component {
       sortDirection,
       advancedSettings,
       autoRefreshEnabled,
-      compact,
+
       logs,
     } = this.state;
+    const { isCompact } = this.props;
 
     return (
       <>
-        {compact ? (
+        {isCompact ? (
           <CompactHeader
             updateFilteringState={this.updateState}
             searchPhrase={searchPhrase}
@@ -198,10 +208,7 @@ export default class Logs extends React.Component {
             autoRefreshEnabled={autoRefreshEnabled}
           />
         )}
-        <LogTable
-          entityName={this.props.lambdaName}
-          entries={logs.filter(this.filterHealthChecks)}
-        />
+        <LogTable entries={logs.filter(this.filterHealthChecks)} />
       </>
     );
   }

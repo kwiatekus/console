@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import PropTypes from 'prop-types';
 import './AdvancedSettings.scss';
+import { isLambdaContext } from '../../LogsContainer';
 
 import { FormInput, Icon, InlineHelp } from 'fundamental-react';
 
@@ -10,19 +11,21 @@ AdvancedSettings.propTypes = {
   updateFilteringState: PropTypes.func.isRequired,
 };
 
+const SettingsEntry = ({ name, children }) => {
+  return (
+    <div className="advanced_settings__entry">
+      <p className="caption-muted">{name}</p>
+      <div>{children}</div>
+    </div>
+  );
+};
+
 export default function AdvancedSettings({
   advancedSettings,
   hideSettings,
   updateFilteringState,
 }) {
-  const settingsEntry = (name, controls) => {
-    return (
-      <div className="advanced_settings__entry">
-        <p className="caption-muted">{name}</p>
-        <div>{controls}</div>
-      </div>
-    );
-  };
+  const isLambda = useContext(isLambdaContext);
 
   function updateState(data) {
     updateFilteringState({
@@ -41,6 +44,10 @@ export default function AdvancedSettings({
     updateState({ showHealthChecks: e.target.checked });
   }
 
+  function setIstioLogs(e) {
+    updateState({ showIstioLogs: e.target.checked });
+  }
+
   function setQuery(e) {
     updateState({ query: e.target.value });
   }
@@ -49,37 +56,43 @@ export default function AdvancedSettings({
     updateState({ resultLimit: e.target.value });
   }
 
-  const queryInput = settingsEntry(
-    <label htmlFor="query">Query</label>,
-    <FormInput
-      id="query"
-      type="text"
-      onChange={setQuery}
-      autoComplete="off"
-      value={advancedSettings.query}
-    />,
+  const QueryInput = () => (
+    <SettingsEntry name={<label htmlFor="query">Query</label>}>
+      <FormInput
+        id="query"
+        type="text"
+        onChange={setQuery}
+        autoComplete="off"
+        value={advancedSettings.query}
+      />
+    </SettingsEntry>
   );
 
-  const resultLimitInput = settingsEntry(
-    <label htmlFor="result-limit">
-      Result limit
-      <span className="small-inline-help-wrapper">
-        <InlineHelp
-          placement="right"
-          text="Return only limited number of most recent log lines."
-        />
-      </span>
-    </label>,
-    <FormInput
-      id="result-limit"
-      type="number"
-      onChange={setResultLimit}
-      autoComplete="off"
-      defaultValue={advancedSettings.resultLimit}
-    />,
+  const ResultLimitInput = () => (
+    <SettingsEntry
+      name={
+        <label htmlFor="result-limit">
+          Result limit
+          <span className="small-inline-help-wrapper">
+            <InlineHelp
+              placement="right"
+              text="Return only limited number of most recent log lines."
+            />
+          </span>
+        </label>
+      }
+    >
+      <FormInput
+        id="result-limit"
+        type="number"
+        onChange={setResultLimit}
+        autoComplete="off"
+        defaultValue={advancedSettings.resultLimit}
+      />
+    </SettingsEntry>
   );
 
-  const previousLogsInput = (
+  const PreviousLogsInput = () => (
     <>
       <input
         type="checkbox"
@@ -93,7 +106,7 @@ export default function AdvancedSettings({
     </>
   );
 
-  const healthChecksInput = (
+  const HealthChecksInput = () => (
     <>
       <input
         type="checkbox"
@@ -103,6 +116,20 @@ export default function AdvancedSettings({
       />
       <label className="caption-muted" htmlFor="health-checks">
         health check
+      </label>
+    </>
+  );
+
+  const ShowIstioLogsInput = () => (
+    <>
+      <input
+        type="checkbox"
+        id="istio-logs"
+        defaultChecked={advancedSettings.showIstioLogs}
+        onChange={setIstioLogs}
+      />
+      <label className="caption-muted" htmlFor="previous-logs">
+        Istio logs
       </label>
     </>
   );
@@ -118,16 +145,19 @@ export default function AdvancedSettings({
           onClick={() => hideSettings()}
         />
       </h2>
-      {queryInput}
-      {resultLimitInput}
-      {settingsEntry(
-        'Show',
-        <>
-          {previousLogsInput}
-          <br />
-          {healthChecksInput}
-        </>,
-      )}
+      <QueryInput />
+      <ResultLimitInput />
+      <SettingsEntry name="Show">
+        {isLambda && (
+          <>
+            <PreviousLogsInput />
+            <br />
+            <HealthChecksInput />
+            <br />
+          </>
+        )}
+        <ShowIstioLogsInput />
+      </SettingsEntry>
     </section>
   );
 }

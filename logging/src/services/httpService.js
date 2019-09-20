@@ -66,7 +66,7 @@ export const httpService = () => {
       direction = 'forward';
     }
 
-    let limit = 100;
+    let limit = 1000;
     if (resultLimit && resultLimit > 0) {
       limit = resultLimit;
     }
@@ -74,10 +74,11 @@ export const httpService = () => {
     const { start, end } = getPeriod(logsPeriod);
 
     const labelsString = `${labels}`.replace(/,\s*$/, '');
-    const query = `{${labelsString}} ${searchPhrase.trim()}`;
+    const query = `{${labelsString}}`;
+    const regexpParam = searchPhrase ? `&regexp=${searchPhrase}` : '';
 
     const encodedQuery = encodeURIComponent(query);
-    const url = `${httpConfig.queryEndpoint}?query=${encodedQuery}&start=${start}&end=${end}&direction=${direction}&limit=${limit}`;
+    const url = `${httpConfig.queryEndpoint}?query=${encodedQuery}&start=${start}&end=${end}&direction=${direction}&limit=${limit}${regexpParam}`;
 
     const response = await authorizedFetch(url);
     if (response.status === 200) {

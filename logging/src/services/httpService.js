@@ -73,7 +73,8 @@ export const httpService = () => {
 
     const { start, end } = getPeriod(logsPeriod);
 
-    const query = `{${labels}} ${searchPhrase.trim()}`;
+    const labelsString = `${labels}`.replace(/,\s*$/, '');
+    const query = `{${labelsString}} ${searchPhrase.trim()}`;
 
     const encodedQuery = encodeURIComponent(query);
     const url = `${httpConfig.queryEndpoint}?query=${encodedQuery}&start=${start}&end=${end}&direction=${direction}&limit=${limit}`;

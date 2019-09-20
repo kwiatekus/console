@@ -111,6 +111,7 @@ export class LambdaDetailsComponent implements OnInit, OnDestroy {
 
   @ViewChild('editLabelsForm') editLabelsForm: NgForm;
 
+  logsViewHandle;
   trigger: string;
   code: string;
   dependency: string;
@@ -223,8 +224,6 @@ export class LambdaDetailsComponent implements OnInit, OnDestroy {
     this.route.params.subscribe(
       params => {
         this.listenerId = luigiClient.addInitListener(() => {
-          this.initCanShowLogs();
-
           const eventData = luigiClient.getEventData();
           this.namespace = eventData.namespaceId;
           this.token = eventData.idToken;
@@ -251,11 +250,11 @@ export class LambdaDetailsComponent implements OnInit, OnDestroy {
                   this.selectedTriggers.push(httpEndPoint);
                   this.isHTTPTriggerAdded = true;
                   this.isHTTPTriggerAuthenticated = httpEndPoint.isAuthEnabled;
-                  if (this.isHTTPTriggerAuthenticated  && httpEndPoint.authentication){ 
+                  if (this.isHTTPTriggerAuthenticated  && httpEndPoint.authentication){
                         this.jwksUri = httpEndPoint.authentication.jwt.jwksUri;
                         this.authType = httpEndPoint.authentication.type;
                   }
-                 
+
                 },
                 err => {
                   // Can be a valid 404 error when api is not found of a function
@@ -928,6 +927,7 @@ export class LambdaDetailsComponent implements OnInit, OnDestroy {
               }
             });
           }
+          this.initCanShowLogs()
         },
         err => {
           this.navigateToList();
@@ -972,22 +972,23 @@ export class LambdaDetailsComponent implements OnInit, OnDestroy {
       .linkManager()
       .pathExists('/home/cmf-logs')
       .then(exists => {
-        this.canShowLogs = exists;
+        this.showLogs()
       });
   }
 
   showLogs() {
-    luigiClient
+    this.logsViewHandle = luigiClient
       .linkManager()
       .withParams({
         function: this.lambda.metadata.name,
         namespace: this.namespace,
         container_name: this.lambda.metadata.name,
       })
-      .openAsModal('/home/cmf-logs');
+      .openAsSplitView('/home/cmf-logs',{title: 'Logs', size: 40, collapsed: true});
   }
 
   navigateToList() {
+    this.logsViewHandle.close();
     setTimeout(() => {
       luigiClient
         .linkManager()
@@ -1388,10 +1389,10 @@ export class LambdaDetailsComponent implements OnInit, OnDestroy {
   }
 
   changeTab(name: string) {
-    luigiClient
-      .linkManager()
-      .withParams({ selectedTab: name })
-      .navigate('');
+    // luigiClient
+    //   .linkManager()
+    //   .withParams({ selectedTab: name })
+    //   .navigate('');
     this.currentTab = name;
   }
 

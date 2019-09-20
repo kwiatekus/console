@@ -969,31 +969,34 @@ export class LambdaDetailsComponent implements OnInit, OnDestroy {
 
   initCanShowLogs() {
     luigiClient
-      .linkManager()
-      .pathExists('/home/cmf-logs')
-      .then(exists => {
-        this.showLogs()
-      });
+    .linkManager()
+    .pathExists('/home/cmf-logs')
+    .then(exists => {
+      this.showLogs()
+    });
   }
 
   showLogs() {
-    this.logsViewHandle = luigiClient
-      .linkManager()
-      .withParams({
-        function: this.lambda.metadata.name,
-        namespace: this.namespace,
-        container_name: this.lambda.metadata.name,
-      })
-      .openAsSplitView('/home/cmf-logs',{title: 'Logs', size: 40, collapsed: true});
+    if(!this.logsViewHandle){
+      this.logsViewHandle = luigiClient
+        .linkManager()
+        .withParams({
+          function: this.lambda.metadata.name,
+          namespace: this.namespace,
+          container_name: this.lambda.metadata.name,
+          splitViewMode: 'true',
+        })
+        .openAsSplitView('/home/cmf-logs',{title: 'Logs', size: 40, collapsed: true});
+    }
   }
 
   navigateToList() {
-    this.logsViewHandle.close();
     setTimeout(() => {
       luigiClient
         .linkManager()
         .fromClosestContext()
         .navigate('/');
+      this.logsViewHandle.close();
     }, 100);
   }
 
@@ -1394,6 +1397,19 @@ export class LambdaDetailsComponent implements OnInit, OnDestroy {
     //   .withParams({ selectedTab: name })
     //   .navigate('');
     this.currentTab = name;
+    if(this.currentTab === 'test'){
+      this.expandSplitView();
+    } else {
+      this.collapseSplitView();
+    }
+  }
+
+  collapseSplitView(){
+    this.logsViewHandle.collapse();
+  }
+
+  expandSplitView(){
+    this.logsViewHandle.expand();
   }
 
   showNotification(notificationData: INotificationData, timeout?: number) {

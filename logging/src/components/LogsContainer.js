@@ -15,9 +15,9 @@ export default function LogsContainer() {
     PodSubscriptionServiceContext,
   );
 
-  function todo_is_lambda() {
+  function isSplitView() {
     var params = LuigiClient.getNodeParams();
-    return !!params.function;
+    return !!params.splitViewMode;
   }
 
   function getLambdaData() {
@@ -31,7 +31,7 @@ export default function LogsContainer() {
     return { labels, lambdaName };
   }
 
-  const isCompact = false;
+  const isCompact = isSplitView();
 
   return (
     <isLambdaContext.Provider value={true}>

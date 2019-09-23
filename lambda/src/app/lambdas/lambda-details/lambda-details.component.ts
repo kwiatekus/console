@@ -161,6 +161,14 @@ export class LambdaDetailsComponent implements OnInit, OnDestroy {
   responseEditorMode: 'json' | 'text' = 'json';
   notificationTimeout: NodeJS.Timeout;
 
+  public responseEditorOptions = {
+    showLineNumbers : false,
+    showGutter : false,
+    showFoldWidgets : false,
+    highlightActiveLine: false,
+    highlightSelectedWord: false,
+  }
+
   public issuer: string;
   public jwksUri: string;
   public authType: string;
@@ -1439,7 +1447,7 @@ export class LambdaDetailsComponent implements OnInit, OnDestroy {
   }
 
   handleTestButtonClick() {
-    this.testingResponse = '';
+    this.testingResponse = 'Loading...';
     if (!this.existingHTTPEndpoint) {
       throw new Error('It looks like the Lambda is not deployed yet');
     }

@@ -339,19 +339,20 @@
         </fd-panel-body>
       </fd-panel>
 
-      <fd-panel *ngIf='testingResponse' class="y-fd-panel">
+      <fd-panel class="y-fd-panel">
           <fd-panel-header>
-            <fd-panel-head class="fd-has-margin-bottom-tiny">
+            <fd-panel-head class="fd-has-margin-top-tiny">
               <h2 fd-panel-title>Response</h2>
             </fd-panel-head>
           </fd-panel-header>
 
           <fd-panel-body>
             <ace-editor [readOnly]="true" id="test-result" [(text)]="testingResponse" [theme]="theme"
-              [mode]="responseEditorMode">
+              [mode]="responseEditorMode" [options]="responseEditorOptions" style="border: 0px" *ngIf='testingResponse'>
             </ace-editor>
+            <p class="fd-has-text-align-center fd-has-margin-top-medium" *ngIf="testingResponse === ''">No response data</p>
           </fd-panel-body>
-        </fd-panel>
+      </fd-panel>
       </div>
   </section>
 </div>
